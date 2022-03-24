@@ -1,0 +1,183 @@
+AARCH64 GAS  project1.s 			page 1
+
+
+   1              	/*
+   2              	void selection_sort(int array[], const int length) {
+   3              	    for(int i = 0; i < length - 1; i++) {
+   4              	        int min_j = i;
+   5              	        for(int j = i + 1; j < length; j++) {
+   6              	            if(array[j] < array[min_j]) {
+   7              	                min_j = j;
+   8              	            }
+   9              	        }     
+  10              	        if(min_j != i) {
+  11              	            swap(array, i, min_j);
+  12              	        }
+  13              	    }
+  14              	}
+  15              	*/
+  16              	
+  17              	// Eric Song
+  18              	// I pledge my honor that I have abided by the Stevens Honor System
+  19              	.text
+  20              	.global _start
+  21              	.extern printf
+  22              	/*
+  23              	X20 base address of array
+  24              	X21 size
+  25              	X22 i
+  26              	X23 min_j
+  27              	X24 j
+  28              	X25 value of array[j]
+  29              	X26 value of array[min_j]
+  30              	X27 length-1
+  31              	X28 i+1
+  32              	X29 print index
+  33              	 */
+  34              	
+  35              	SelectionSort:
+  36 0000 14000010 	    ADR X20, arr //loads base address of array
+  37 0004 15000058 	    LDR X21, size
+  38 0008 FB0315AA 	    MOV X27, X21
+  39 000c 7B0700D1 	    SUB X27, X27, 1 // length - 1
+  40              	    // for(int i = 0; i < length - 1; i++)
+  41 0010 160080D2 	    MOV X22, 0
+  42              	OUTER:
+  43 0014 F70316AA 	    MOV X23, X22 //int min_j = i;
+  44              	    
+  45 0018 FC0316AA 	    MOV X28, X22 // x28 = i
+  46 001c 9C070091 	    ADD X28, X28, 1 // x28 = i+1
+  47 0020 F8031CAA 	    MOV X24, X28
+  48              	INNER:
+  49 0024 01F37DD3 	    LSL X1, X24, 3 // this offset of j * 8
+  50 0028 8902018B 	    ADD X9, X20, X1 // base + offset of array
+  51 002c 2A0140F8 	    LDUR X10, [X9, 0] // value of A[j] inside X10
+  52 0030 E2F27DD3 	    LSL X2, X23, 3 // this offset of min_j * 8
+  53 0034 8B02028B 	    ADD X11, X20, X2 // base + offset of array
+  54 0038 6C0140F8 	    LDUR X12, [X11, 0] // value of A[min_j] inside X12
+  55              	
+  56 003c 9F010AEB 	    CMP X12, X10 
+  57 0040 AC000054 	    B.GT IFMINJGREATERTHANJ // if X12 > X10
+AARCH64 GAS  project1.s 			page 2
+
+
+  58 0044 18070091 	    ADD X24, X24, 1
+  59 0048 1F0315EB 	    CMP X24, X21
+  60 004c C1FEFF54 	    B.NE INNER
+  61 0050 06000014 	    B AFTERINNER
+  62              	
+  63              	IFMINJGREATERTHANJ: 
+  64 0054 F70318AA 	    MOV X23, X24
+  65 0058 18070091 	    ADD X24, X24, 1
+  66 005c 1F0315EB 	    CMP X24, X21
+  67 0060 21FEFF54 	    B.NE INNER
+  68 0064 01000014 	    B AFTERINNER
+  69              	
+  70              	// end of inner loop
+  71              	AFTERINNER:
+  72 0068 FF0216EB 	    CMP X23, X22
+  73 006c 41000054 	    B.NE pleaseSwap
+  74 0070 02000014 	    B DONE
+  75              	
+  76              	pleaseSwap:
+  77 0074 05000094 	    BL SWAP
+  78              	DONE:
+  79 0078 D6060091 	    ADD X22, X22, 1
+  80 007c DF021BEB 	    CMP X22, X27 //compares i and (length-1)
+  81 0080 A1FCFF54 	    B.NE OUTER // if i != length-1
+  82 0084 11000014 	    B printarr
+  83              	
+  84              	SWAP: // swap(array, i, min_j); swap array[i] with array[min_j]
+  85              	/*
+  86              	X13 = i * 8
+  87              	X14 = X20 + X13 ==> base + offset
+  88              	X15 load from X14 ==> array[i]
+  89              	X16 = min_j * 8
+  90              	X17 = X20 + X16
+  91              	X18 load from X17 ==> array[min_j]
+  92              	X3 = X15
+  93              	X15 = X18
+  94              	X18 = X3
+  95              	STUR X15, [X14, 0]
+  96              	STUR X18, [X17, 0]
+  97              	
+  98              	 */
+  99 0088 FF2300D1 	    SUB SP, SP, 8
+ 100 008c FE0300F8 	    STUR LR, [SP, 0]
+ 101              	
+ 102 0090 CDF27DD3 	    LSL X13, X22, 3
+ 103 0094 8E020D8B 	    ADD X14, X20, X13
+ 104 0098 CF0140F8 	    LDUR X15, [X14, 0]
+ 105              	    
+ 106 009c F0F27DD3 	    LSL X16, X23, 3
+ 107 00a0 9102108B 	    ADD X17, X20, X16
+ 108 00a4 320240F8 	    LDUR X18, [X17, 0]
+ 109 00a8 E3030FAA 	    MOV X3, X15
+ 110 00ac EF0312AA 	    MOV X15, X18
+ 111 00b0 F20303AA 	    MOV X18, X3
+ 112              	
+ 113 00b4 CF0100F8 	    STUR X15, [X14, 0]
+ 114 00b8 320200F8 	    STUR X18, [X17, 0]
+AARCH64 GAS  project1.s 			page 3
+
+
+ 115              	
+ 116 00bc FE0340F8 	    LDUR LR, [SP, 0] //loading return address to start
+ 117 00c0 FF230091 	    ADD SP, SP, 8 //adding it back (pop) == deallocating
+ 118 00c4 C0031FD6 	    BR LR // or X30
+ 119              	
+ 120              	
+ 121              	
+ 122              	printarr:
+ 123              	    //ideally print array
+ 124 00c8 00000010 	    ADR X0, str
+ 125 00cc 810240F8 	    LDUR X1, [X20, 0]
+ 126 00d0 00000094 	    BL printf
+ 127 00d4 B50600D1 	    SUB X21, X21, 1
+ 128 00d8 94220091 	    ADD X20, X20, 8
+ 129 00dc 75FFFFB5 	    CBNZ X21, printarr
+ 130 00e0 04000014 	    B EXIT
+ 131              	
+ 132              	_start:
+ 133 00e4 15000058 		LDR X21, size
+ 134 00e8 550000B4 		CBZ X21, EXIT
+ 135 00ec C5FFFF17 		B SelectionSort
+ 136              		// exit call
+ 137              	EXIT:
+ 138 00f0 000080D2 		MOV X0, 0
+ 139 00f4 A80B8052 		MOV W8, 93
+ 140 00f8 010000D4 		SVC 0
+ 141              	
+ 142              	.data
+ 143 0000 64000000 	size: .quad 100
+ 143      00000000 
+ 144 0008 62000000 	arr: .quad 98, 96, 99, 70, 64, 80, 93, 46, 71, 34, 39, 48, 49, 68, 10, 17, 85, 40, 67, 59, 60, 78, 
+ 144      00000000 
+ 144      60000000 
+ 144      00000000 
+ 144      63000000 
+ 145 0328 25640A00 	str: .ascii "%d\n\0" // quad, use %ld to print
+ 146              	
+ 147              	.end
+AARCH64 GAS  project1.s 			page 4
+
+
+DEFINED SYMBOLS
+          project1.s:132    .text:00000000000000e4 _start
+          project1.s:35     .text:0000000000000000 SelectionSort
+          project1.s:36     .text:0000000000000000 $x
+          project1.s:144    .data:0000000000000008 arr
+          project1.s:143    .data:0000000000000000 size
+          project1.s:42     .text:0000000000000014 OUTER
+          project1.s:48     .text:0000000000000024 INNER
+          project1.s:63     .text:0000000000000054 IFMINJGREATERTHANJ
+          project1.s:71     .text:0000000000000068 AFTERINNER
+          project1.s:76     .text:0000000000000074 pleaseSwap
+          project1.s:78     .text:0000000000000078 DONE
+          project1.s:84     .text:0000000000000088 SWAP
+          project1.s:122    .text:00000000000000c8 printarr
+          project1.s:145    .data:0000000000000328 str
+          project1.s:137    .text:00000000000000f0 EXIT
+
+UNDEFINED SYMBOLS
+printf
